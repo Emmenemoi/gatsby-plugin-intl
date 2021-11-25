@@ -1,5 +1,7 @@
 const webpack = require("webpack")
 const { isMatch } = require("./util")
+const readYaml = require('read-yaml');
+const fs = require('fs');
 
 function flattenMessages(nestedMessages, prefix = "") {
   return Object.keys(nestedMessages).reduce((messages, key) => {
@@ -60,14 +62,23 @@ exports.onCreatePage = async ({ page, actions }, pluginOptions) => {
   const getMessages = (path, language) => {
     try {
       // TODO load yaml here
-      const messages = require(`${path}/${language}.json`)
+      const messages = () => {
+        if (fs.existsSync(`${path}/${language}.yaml`)) {
+          return readYaml.sync(`${path}/${language}.yaml`);
+         } else if (fs.existsSync(`${path}/${language}.yml`)) {
+          return readYaml.sync(`${path}/${language}.yml`);
+         } else {
+          return require(`${path}/${language}.json`)
+         }
+      };
+      
 
       return flattenMessages(messages)
     } catch (error) {
       if (error.code === "MODULE_NOT_FOUND") {
         process.env.NODE_ENV !== "test" &&
           console.error(
-            `[gatsby-plugin-intl] couldn't find file "${path}/${language}.json"`
+            `[gatsby-plugin-intl] couldn't find file "${path}/${language}.(json|yml|yaml)"`
           )
       }
 
